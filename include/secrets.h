@@ -26,7 +26,7 @@
 #include <pgmspace.h>
 
 #define SECRET
-#define THINGNAME "Ulmitate killing machine"
+#define THINGNAME "Subscriber10"
 
 const char WIFI_SSID[] = "Redmis";
 const char WIFI_PASSWORD[] = "demon111";

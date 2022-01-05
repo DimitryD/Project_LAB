@@ -30,8 +30,9 @@
 #include "AWS.h"
 
 /* The MQTT topics that this device should publish/subscribe to */
-#define AWS_IOT_PUBLISH_TOPIC   "esp32/pub" 
-#define AWS_IOT_SUBSCRIBE_TOPIC "esp32/target"
+#define AWS_IOT_PUBLISH_TOPIC          "greengrass/group10" 
+#define AWS_IOT_SUBSCRIBE_TOPIC_ROVER  "greengrass/group10rover"
+#define AWS_IOT_SUBSCRIBE_TOPIC_TARGET "greengrass/group10target"
 
 WiFiClientSecure net = WiFiClientSecure();
 MQTTClient client = MQTTClient(256);
@@ -41,16 +42,8 @@ myawsclass::myawsclass() {
 }
 
 
-void messageHandler(String &topic, String &payload) {
-  Serial.println("incoming: " + topic + " - " + payload);
-
-//  StaticJsonDocument<200> doc;
-//  deserializeJson(doc, payload);
-//  const char* message = doc["message"];
-}
-
-void myawsclass::stayConnected() {
-  client.loop();
+bool myawsclass::stayConnected() {
+  return client.loop();
 }
 
 void myawsclass::connectAWS() {
@@ -75,9 +68,6 @@ void myawsclass::connectAWS() {
   /* Connect to the MQTT broker on the AWS endpoint we defined earlier */
   client.begin(AWS_IOT_ENDPOINT, 8883, net);
 
-  /* Create a message handler */
-  client.onMessage(messageHandler);
-
   Serial.print("Connecting to AWS IOT");
 
   while (!client.connect(THINGNAME)) {
@@ -92,9 +82,15 @@ void myawsclass::connectAWS() {
   }
 
   /* Subscribe to a topic */
-  client.subscribe(AWS_IOT_SUBSCRIBE_TOPIC);
+  client.subscribe(AWS_IOT_SUBSCRIBE_TOPIC_ROVER);
+  client.subscribe(AWS_IOT_SUBSCRIBE_TOPIC_TARGET);
 
   Serial.println("AWS IoT Connected!");
+}
+
+void myawsclass::messageHandler(MQTTClientCallbackSimple cb) {
+  /* Create a message handler */
+  client.onMessage(cb);
 }
 
 void myawsclass::publishMessage(int16_t sensorValue) {
