@@ -13,6 +13,21 @@ class logic {
     void updateRover(String &payload);             /* Update rover coordinates */
   protected:
     void roverReadyToMove();
+    void alignCoordinates();
+    void rotate(int angle);
+    void moveTwoMotors(Direction direction, int time);
+    void moveTwoMotors(Direction direction);
+    void stopMotors();
+    void alignXaxis();
+    void alignYaxis();
+    void avoidObstacleOnXaxis();
+    void avoidObstacleOnYaxis();
+    bool checkObstacle();
+    int obstacleDirection();
+    bool targetReached();
+    bool targetXReached();
+    bool targetYReached();
+    void finalDance();
   private:
     mclass motor;
     sclass sensor;

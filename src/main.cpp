@@ -35,11 +35,12 @@ void setup(){
 }
 
 void loop(){
-delay(1000);
+  delay(1000);
 }
 
 void messageHandler(String &topic, String &payload) {
-    Serial.println("incoming: " + topic + " - " + payload);
+    // Serial.println("incoming: " + topic + " - " + payload);
+    if (&payload == nullptr || payload.equals("null") || payload == NULL) return;    
     if (topic.equals("greengrass/group10rover")) roverLogic.updateRover(payload);
     else roverLogic.updateTarget(payload);
 }
@@ -51,38 +52,32 @@ void taskOne( void * parameter )
   awsobject.connectAWS();
   awsobject.messageHandler(messageHandler);
   //example of a task that executes for some time and then is deleted
-  for( int i = 0; i < 1500; i++ ) {
+  for(;; ) {
       bool b = awsobject.stayConnected();
       if (!b) awsobject.connectAWS();
       
-      vTaskDelay(1000 / portTICK_PERIOD_MS); //this pauses the task, so others can execute
+      vTaskDelay(5); //this pauses the task, so others can execute
     
   }
   Serial.println("Ending task: 1"); //should not reach this point.
   vTaskDelete( NULL );
 }
  
-void taskTwo( void * parameter)
-{
+void taskTwo(void * parameter) {
+  Serial.println("Logic taskTwo");
+
+  Serial.println("init sensor");
   sclass sensorobject = sclass();
   sensorobject.SETUP();
   roverLogic.setSensor(sensorobject);
 
+  Serial.println("init motor");
   mclass motorobject = mclass();
   motorobject.SETUP();
   roverLogic.setMotor(motorobject);
 
   roverLogic.reachTarget();
 
-    // create an endless loop so the task executes forever
-    for( ;; )
-    {
-      int16_t *arr =  sensorobject.reading();
-        Serial.println("Hello from task: 2");
-        for(int i = 0; i < 3; i++)
-          Serial.println(arr[i]);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-    }
-    Serial.println("Ending task 2"); //should not reach this point.
-    vTaskDelete( NULL );
+   Serial.println("Ending task 2"); //should not reach this point.
+  vTaskDelete( NULL );
 }
