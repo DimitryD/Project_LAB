@@ -43,23 +43,30 @@ sclass::sclass() {
 }
 
 void sclass::SETUP() {
-  /* Wire.begin takes two arguments, first being SDA and second being SCL (Wire.begin(SDA,SCL)) */
-  Wire.begin(27,26);
+  uint8_t initError = 0;
+  do { 
+    /* Wire.begin takes two arguments, first being SDA and second being SCL (Wire.begin(SDA,SCL)) */
+    Wire.begin(27,26);
 
 
-  Serial.println("starting");
+    Serial.println("starting");
 
-  /* Wait for the serial port to be opened before printing */
-  /* messages (only applies to boards with native USB) */
-  while (!Serial) {}
+    /* Wait for the serial port to be opened before printing */
+    /* messages (only applies to boards with native USB) */
+    while (!Serial) {}
 
-  sensor.init();
-  if (sensor.getLastError()) /* case it is not possible to connect to the sensor */
-  {
-    Serial.print(F("Failed to initialize OPT3101: error "));
-    Serial.println(sensor.getLastError());
-    while (1) {} /* stay */
-  }
+    sensor.init();
+
+    initError = sensor.getLastError();
+
+    /* case it is not possible to connect to the sensor */
+    if (sensor.getLastError()) {
+      Serial.print(F("Failed to initialize OPT3101: error "));
+      Serial.println(sensor.getLastError());
+    }
+
+  } while (initError != 0);
+
   sensor.setContinuousMode();
   sensor.enableDataReadyOutput(1);
   sensor.setFrameTiming(32); /* to average the specified number of samples taken before returning a value */
@@ -92,6 +99,13 @@ int16_t *sclass::reading() {
   return arr;
   dataReady = false;  /* put low to restart the sampling */
   delay(100);
+}
+
+void sclass::flush() {
+  for (size_t i = 0; i < 100; i++) {
+    vTaskDelay(1);
+    this->reading();
+  }
 }
 
 sclass sensorobject = sclass(); /* creating an object of class sensor */

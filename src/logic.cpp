@@ -59,7 +59,7 @@ void logic::reachTarget() {
 }
 
 void logic::finalDance() {
-
+    Serial.println("finalDance");    
 }
 
 void logic::updateRover(String &payload) {
@@ -86,8 +86,6 @@ void logic::setMotor(mclass motor) {
     this->motor = motor;
     this->moveTwoMotors(Forward, 100);
 }
-
-const int DEFAULT_MOTOR_SPEED = 100;
 
 void logic::moveTwoMotors(Direction direction, int time) {
     Serial.printf("moveTwoMotors with direction and time (%d)\n", time);
@@ -125,27 +123,30 @@ void logic::alignXaxis() {
         this->rotate(360);
     else
         this->rotate(180);
-    int validRange[11] = {this->targetX-5,this->targetX-4,this->targetX-3,this->targetX-2,this->targetX-1,this->targetX,this->targetX+1,this->targetX+2,this->targetX+3,this->targetX+4,this->targetX+5};
     this->moveTwoMotors(Forward);
-    while (!(this->roverX >= validRange[0] && this->roverX <= validRange[10])) {
+    while (!(this->roverX >= this->targetX-30 && this->roverX <= this->targetX+30)) {
         vTaskDelay(5);
         if (checkObstacle()) {
             this->stopMotors();
             Serial.println("OBSTACLE X !!!");
+            if (this->getObstacleDistance() < 120 && this->getObstacleDistance() > 0)
+                this->moveTwoMotors(Backward, DEFAULT_AVOID_RUN_DURATION * ((150.0 - this->getObstacleDistance()) / 150.0));
             this->avoidObstacleOnXaxis();
+            this->sensor.flush();
+            this->moveTwoMotors(Forward);     
         }
     }
     this->stopMotors();
 }
 
-const int BORDER_SIZE = 480;
-const int DEFAULT_AVOID_RUN_DURATION = 7000;
-
 void logic::avoidObstacleOnXaxis() {
     Serial.println("avoidObstacleOnXaxis");
-    int distanceToEndBorder = BORDER_SIZE - targetX;
-    int distanceToStartBorder = targetX;
-    if (this->roverAngle >= 175 && this->roverAngle < 185) {
+    int distanceToEndBorder = BORDER_SIZE - roverY;
+    int distanceToStartBorder = roverY;
+    Serial.println(distanceToEndBorder);
+    Serial.println(distanceToStartBorder);
+    Serial.println(roverAngle);
+    if (this->roverAngle >= 110 && this->roverAngle < 250) { // ~180
         if (distanceToEndBorder > distanceToStartBorder) {
             rotate(90);
             moveTwoMotors(Forward, DEFAULT_AVOID_RUN_DURATION);
@@ -170,7 +171,34 @@ void logic::avoidObstacleOnXaxis() {
 }
 
 void logic::avoidObstacleOnYaxis() {
-    
+    Serial.println("avoidObstacleOnYaxis");
+    int distanceToEndBorder = BORDER_SIZE - roverX;
+    int distanceToStartBorder = roverX;
+    Serial.println(distanceToEndBorder);
+    Serial.println(distanceToStartBorder);
+    Serial.println(roverAngle);
+    if (this->roverAngle >= 200 && this->roverAngle <= 340) { // ~270
+        if (distanceToEndBorder > distanceToStartBorder) {
+            rotate(360);
+            moveTwoMotors(Forward, DEFAULT_AVOID_RUN_DURATION);
+            rotate(270);   
+        } else {
+            rotate(180);
+            moveTwoMotors(Forward, DEFAULT_AVOID_RUN_DURATION);
+            rotate(270);
+        }
+    } else {
+        if (distanceToEndBorder > distanceToStartBorder) {
+            rotate(360);
+            moveTwoMotors(Forward, DEFAULT_AVOID_RUN_DURATION);
+            rotate(90);
+        } else {
+            rotate(180);
+            moveTwoMotors(Forward, DEFAULT_AVOID_RUN_DURATION);
+            rotate(90);
+        }
+    }
+    Serial.println("avoidObstacleOnYaxis avoided");
 }
 
 int logic::obstacleDirection() {
@@ -188,17 +216,17 @@ void logic::alignYaxis() {
         this->rotate(270);
     else
         this->rotate(90);
-    int validRange[11] = {this->targetY-5,this->targetY-4,this->targetY-3,this->targetY-2,this->targetY-1,this->targetY,this->targetY+1,this->targetY+2,this->targetY+3,this->targetY+4,this->targetY+5};
     this->moveTwoMotors(Forward);
-    while (!(this->roverY >= validRange[0] && this->roverY <= validRange[10])) {
+    while (!(this->roverY >= this->targetY-30 && this->roverY <= this->targetY+30)) {
         vTaskDelay(5);
         if (checkObstacle()) {
             this->stopMotors();
-            Serial.println("OBSTACLE X !!!");
+            Serial.println("OBSTACLE Y !!!");
+            if (this->getObstacleDistance() < 120 && this->getObstacleDistance() > 0)
+                this->moveTwoMotors(Backward, DEFAULT_AVOID_RUN_DURATION * ((150.0 - this->getObstacleDistance()) / 150.0));
             this->avoidObstacleOnYaxis();\
-            checkObstacle();
-            vTaskDelay(100);
-            checkObstacle();
+            this->sensor.flush();
+            this->moveTwoMotors(Forward); 
         }
     }
     this->stopMotors();
@@ -211,28 +239,33 @@ bool logic::checkObstacle() {
     for(int i = 0; i < 3; i++)
         Serial.printf("%d, ", arr[i]);  
     Serial.println(""); 
-    return arr[0] < 150 || arr[1] < 150 || arr[2] < 150;
+    return arr[0] < 120 || arr[1] < 150 || arr[2] < 120;
+}
+
+int logic::getObstacleDistance() {
+    int16_t *arr =  sensorobject.reading();
+    return min(arr[0], min(arr[1], arr[2]));
 }
 
 void logic::rotate(int angle) {
     Serial.printf("rotate: %d\n", angle);
-    this->moveTwoMotors(Backward, 300);
-    int validRange[7] = {(angle - 3) % 360, (angle - 2) % 360, (angle - 1) % 360, angle % 360, (angle + 1) % 360, (angle + 2) % 360, (angle + 3) % 360,};
-    if (!outOfRange(validRange, 7, roverAngle)) return;
+    this->moveTwoMotors(Backward, 500);
+    int validRange[11] = {(angle - 5) % 360,(angle - 4) % 360,(angle - 3) % 360, (angle - 2) % 360, (angle - 1) % 360, angle % 360, (angle + 1) % 360, (angle + 2) % 360, (angle + 3) % 360, (angle + 4) % 360, (angle + 5) % 360};
+    if (!outOfRange(validRange + 1, 9, roverAngle)) return;
     if (((angle - this->roverAngle + 540) % 360) - 180 > 0) { // 360 - 270 = 90 > 0 -> left // 180 - 270 = -90 < 0 -> right // 100 - 200 = -100 -> right
         // rotate left
         // Serial.println("rotate left");
-        this->motor.set_speed(MotorB, Backward, DEFAULT_MOTOR_SPEED);
+        this->motor.set_speed(MotorB, Backward, DEFAULT_MOTOR_SPEED * 3 / 4);
     } else {
         // Serial.println("rotate right");
         // rotate right
-        this->motor.set_speed(MotorA, Forward, DEFAULT_MOTOR_SPEED);
+        this->motor.set_speed(MotorA, Forward, DEFAULT_MOTOR_SPEED * 3 / 4);
     }
     // -5 <= roverAngle(266) <= 5
     Serial.println("rotating...");
-    while (outOfRange(validRange, 7, this->roverAngle)) {
+    while (outOfRange(validRange, 11, this->roverAngle)) {
         // Serial.println("rotating...");
-        vTaskDelay(70);
+        vTaskDelay(5);
     }
     this->stopMotors();
     Serial.println("rotate end");

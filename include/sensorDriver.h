@@ -17,6 +17,7 @@ class sclass {
     
     void SETUP();         /* Initialize the Sensor */
     int16_t *reading();   /* Return the values of the sensors as an array */
+    void flush();         /* Read sensor records to flush buffered values*/
 };
 
 extern sclass sensorobject;

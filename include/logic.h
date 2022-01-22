@@ -23,6 +23,7 @@ class logic {
     void avoidObstacleOnXaxis();
     void avoidObstacleOnYaxis();
     bool checkObstacle();
+    int getObstacleDistance();
     int obstacleDirection();
     bool targetReached();
     bool targetXReached();
@@ -36,6 +37,9 @@ class logic {
     int roverX;
     int roverY;
     int roverAngle;
+    const int BORDER_SIZE = 480;
+    const int DEFAULT_AVOID_RUN_DURATION = 8000;
+    const int DEFAULT_MOTOR_SPEED = 100;
 
 
 };
